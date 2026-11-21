@@ -85,6 +85,14 @@ function isSavings(t) {
   if (t.goalId) return true;
   return t.categoryId === 'c_fin' && (t.subcategory === 'Sparen' || t.subcategory === 'Beleggingen');
 }
+/* Maaltijdcheques: apart betaalmiddel met een eigen saldo, los van de bankrekening */
+const MEAL = 'Maaltijdcheques';
+function isMealTx(t) { return (t.type === 'income' && t.categoryId === 'i_meal') || (t.type === 'expense' && t.paymentMethod === MEAL); }
+function mealBalanceAt(dateISO) {
+  let b = 0;
+  for (const t of S.tx) if (t.date <= dateISO && isMealTx(t)) b += t.type === 'income' ? t.amount : -t.amount;
+  return b;
+}
 function isExtraIncome(t) { const c = cat(t.categoryId); return !!(c && c.extra); }
 
 /* ---------- Terugkerende transacties ---------- */
@@ -212,7 +220,7 @@ function yearView(y) {
 }
 function balanceAt(dateISO) {
   let b = S.settings.startBalance || 0;
-  for (const t of S.tx) if (t.date <= dateISO) b += signedAmount(t);
+  for (const t of S.tx) if (t.date <= dateISO && !isMealTx(t)) b += signedAmount(t);
   return b;
 }
 function budgetRows(ym) {

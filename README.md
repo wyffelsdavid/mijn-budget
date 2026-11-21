@@ -68,6 +68,7 @@ Never rename the repository or GitHub account: a new address means a new, empty 
 
 - **+ button**: amount, tap a category, **Toevoegen**. Optional details (subcategory, fixed/variable, payment method, notes, repeat) are under *Meer details*.
 - **Budget** tab: monthly limits per category (colours at 75%, 90% and over budget) and **Vaste lasten & inkomen** for rent, subscriptions and salary. These are booked automatically on their due date, never twice.
+- Meal vouchers (*maaltijdcheques*) are their own income category and their own payment method, with a separate balance on the overview. Register the monthly amount as income in **Maaltijdcheques** (or as a recurring income). When adding a grocery or restaurant expense under *Eten & boodschappen*, switch on **Betaald met maaltijdcheques**. Voucher money is never mixed into the bank balance.
 - Holiday pay (*vakantiegeld*) and 13th month (*13de maand*) are separate income categories marked as extra income, so they are not counted as monthly salary.
 - **Sparen** tab: savings goals with deposits and withdrawals, plus the savings calculator. Deposits move money from the available balance to savings; they don't count as spending.
 - **Rapporten** tab: month and year reports with charts.

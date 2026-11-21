@@ -1,6 +1,6 @@
 'use strict';
 /* Mijn Budget – gebruikersinterface */
-const APP_VERSION = '1.1.0';
+const APP_VERSION = '1.2.0';
 const UI = {
   view: 'dashboard', ym: thisYM(), year: Number(thisYM().slice(0, 4)),
   budgetSeg: 'budgets', reportSeg: 'month', catSeg: 'expense',
@@ -19,7 +19,7 @@ const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 9);
 const sum = (arr, f) => arr.reduce((a, x) => a + f(x), 0);
 
-const PAY = ['Bankkaart', 'Kredietkaart', 'Cash', 'Overschrijving', 'Domiciliëring', 'Payconiq', 'Andere'];
+const PAY = ['Bankkaart', 'Kredietkaart', 'Maaltijdcheques', 'Cash', 'Overschrijving', 'Domiciliëring', 'Payconiq', 'Andere'];
 const ICONS = ['🏡','🧺','🚗','💄','👗','🩺','👪','✈️','🏦','✨','☕','🍽️','🛒','🥐','🍷','💅','💇‍♀️','🧴','👠','👜','💍','🎁','🐾','🧸','📚','🎬','🎵','🧘‍♀️','🏋️‍♀️','💊','📱','💻','⚡','💧','🔥','🌐','📺','🛡️','🔧','🚆','⛽','🅿️','🌴','🎓','💼','💶','⭐','🧾','➕','🌸','🌿','💐','🕯️','🎨','🐶','🐱','👶','💳','📈','🐷','❤️','🍰'];
 const COLORS = ['#C9A99B','#D8B48A','#9DB0C8','#D99AA5','#B7A3D1','#93BFA8','#E3A88B','#8FB5C2','#A7A39B','#BDB3AE','#C48A92','#E2B263','#8FC1BE','#9CB89F','#D9BC7E','#A3B6CF'];
 const GOAL_ICONS = ['🌴','👗','🛟','🚗','🏠','✨','💍','🎓','💐','🧳','💻','🐷'];
@@ -36,7 +36,7 @@ const DEFAULT_CATS = [
   ['c_other','Overig','✨','#BDB3AE',['Diverse uitgaven']]
 ];
 const DEFAULT_INC = [
-  ['i_salary','Salaris','💼','#9CB89F',false],['i_extra','Bijkomend inkomen','➕','#A9C4B9',true],
+  ['i_salary','Salaris','💼','#9CB89F',false],['i_meal','Maaltijdcheques','🍽️','#D8B48A',false],['i_extra','Bijkomend inkomen','➕','#A9C4B9',true],
   ['i_holiday','Vakantiegeld','🌴','#8FC1BE',true],['i_13th','13de maand','🎁','#B9AED6',true],
   ['i_bonus','Bonus','⭐','#D9BC7E',true],['i_tax','Belastingteruggave','🧾','#A3B6CF',true],['i_other','Overig inkomen','💶','#BDB3AE',true]
 ];
@@ -66,6 +66,7 @@ async function init() {
   catch (e) { $('#view').innerHTML = `<div class="card empty"><h3>De app kan niet starten</h3><p>${esc(e.message)}</p><p class="muted">Gebruik Safari op iPhone (iOS 15 of nieuwer) en zorg dat privénavigatie uit staat.</p></div>`; return; }
   await loadAll();
   if (!S.settings.initialized) await seedDefaults();
+  await migrate();
   await generateRecurring();
   bindEvents();
   render();
@@ -95,9 +96,19 @@ function defaultCategories() {
   DEFAULT_INC.forEach(([id, name, ic, color, extra], i) => cats.push({ id, kind: 'income', name, icon: ic, color, subs: [], extra, order: i }));
   return cats;
 }
+/* Nieuwe standaardcategorieën ook toevoegen bij bestaande installaties (één keer) */
+async function migrate() {
+  if (!S.settings.catsV2) {
+    if (!S.cats.some((c) => c.id === 'i_meal')) {
+      const c = { id: 'i_meal', kind: 'income', name: 'Maaltijdcheques', icon: '🍽️', color: '#D8B48A', subs: [], extra: false, order: 0.5 };
+      await DB.put('categories', c); S.cats.push(c); invalidate();
+    }
+    await setSetting('catsV2', true);
+  }
+}
 async function seedDefaults() {
   const cats = defaultCategories();
-  const settings = { initialized: true, currency: 'EUR', language: 'nl', startBalance: 0, userName: '', createdAt: new Date().toISOString() };
+  const settings = { initialized: true, catsV2: true, currency: 'EUR', language: 'nl', startBalance: 0, userName: '', createdAt: new Date().toISOString() };
   await DB.batch({ put: { categories: cats, settings: Object.entries(settings).map(([key, value]) => ({ key, value })) } });
   S.cats = cats; Object.assign(S.settings, settings); invalidate();
 }
@@ -169,7 +180,9 @@ function renderDashboard() {
   const v = monthView(ym), now = ym === curM ? v : monthView(curM);
   const bal = balanceAt(today);
   const rest = plannedBetween(addDaysISO(today, 1), lastDayOfYM(curM));
-  const expEnd = bal + sum(rest, (p) => signedAmount(p.rec));
+  const expEnd = bal + sum(rest.filter((p) => !isMealTx(p.rec)), (p) => signedAmount(p.rec));
+  const hasMeal = S.tx.some(isMealTx) || S.rec.some((r) => r.active && isMealTx(r));
+  const mealBal = mealBalanceAt(today);
   const rows = budgetRows(ym), bLim = sum(rows, (r) => r.b.limit), bSpent = sum(rows, (r) => r.spent);
   const h = new Date().getHours(), name = S.settings.userName;
   const greet = h < 6 ? 'Goedenacht' : h < 12 ? 'Goedemorgen' : h < 18 ? 'Goedemiddag' : 'Goedenavond';
@@ -191,6 +204,7 @@ function renderDashboard() {
       <div class="hero-l">Beschikbaar saldo</div>
       <div class="hero-amount">${fmt(bal)}</div>
       <div class="hero-sub">Verwacht op ${fmtDate(lastDayOfYM(curM))}: <b>${fmt(expEnd)}</b></div>
+      ${hasMeal ? `<div class="hero-meal">🍽️ Maaltijdcheques: <b>${fmt(mealBal)}</b></div>` : ''}
     </div>
     <div class="hero-ring">${ring(spentPct)}<span>van je inkomen<br>deze maand uitgegeven</span></div>
     <button class="hero-btn" data-act="add">Uitgave toevoegen</button>
@@ -298,6 +312,7 @@ function txRow(t) {
   if (t.recurringId) tags.push('vast, herhaalt');
   else if (t.fixed) tags.push('vast');
   if (t.goalId) tags.push('spaardoel');
+  if (t.type === 'expense' && t.paymentMethod === MEAL) tags.push('maaltijdcheques');
   return `<button class="row tx" data-act="tx-edit" data-id="${esc(t.id)}">${icon(c)}<div class="row-mid"><div class="row-t">${esc(t.description)}</div><div class="row-s">${tags.join(', ')}</div></div>
     <div class="row-a ${t.type === 'income' ? 'pos' : ''}">${t.type === 'income' ? '+' : '−'}${fmt(t.amount)}</div></button>`;
 }
@@ -688,6 +703,7 @@ function txFormHTML() {
     <div class="field-label">Categorie</div>
     <div class="chips">${cats.map((x) => `<button type="button" class="chip ${x.id === F.categoryId ? 'sel' : ''}" data-act="f-cat" data-id="${x.id}">${icon(x, 'xs')}${esc(x.name)}</button>`).join('')}</div>
     ${c && c.subs.length ? `<div class="field-label">Subcategorie</div><div class="chips small">${c.subs.map((s) => `<button type="button" class="chip ${s === F.subcategory ? 'sel' : ''}" data-act="f-sub" data-v="${esc(s)}">${esc(s)}</button>`).join('')}</div>` : ''}
+    ${F.type === 'expense' && F.categoryId === 'c_food' ? `<button type="button" class="switch ${F.paymentMethod === MEAL ? 'on' : ''}" data-act="f-meal"><span>🍽️ Betaald met maaltijdcheques</span><i></i></button>` : ''}
     <label class="field"><span>Omschrijving</span><input id="f-desc" maxlength="80" autocomplete="off" placeholder="${esc(F.subcategory || (c && c.name) || 'Bv. kapper')}" value="${esc(F.description)}"></label>
     <label class="field"><span>Datum</span><input id="f-date" type="date" value="${F.date}"></label>
     <button type="button" class="more" data-act="f-more">${F.more ? 'Minder details' : 'Meer details'}</button>
@@ -1069,6 +1085,7 @@ const ACT = {
   'f-fixed': (el) => { syncTx(); F.fixed = el.dataset.v === '1'; setSheet(txFormHTML()); },
   'f-repeat': () => { syncTx(); F.repeat = !F.repeat; if (F.repeat) F.fixed = true; setSheet(txFormHTML()); },
   'f-save': () => saveTxForm(),
+  'f-meal': () => { syncTx(); F.paymentMethod = F.paymentMethod === MEAL ? '' : MEAL; setSheet(txFormHTML()); },
   'f-dup': () => { syncTx(); Object.assign(F, { id: null, date: todayISO(), recurringId: null, goalId: null, createdAt: null }); setSheet(txFormHTML()); toast('Kopie gemaakt, pas aan en voeg toe'); },
   'f-del': async () => {
     const id = F.id;

@@ -266,3 +266,6 @@ textarea { resize: vertical; }
 .howto { margin-top: 10px; font-size: 14px; }
 .howto summary { color: var(--rose-d); font-weight: 600; cursor: pointer; padding: 4px 0; }
 .howto ol { padding-left: 20px; margin: 8px 0; line-height: 1.55; }
+
+.hero-meal { display: inline-block; margin-top: 8px; font-size: 13px; background: rgba(255, 255, 255, .2); border-radius: 99px; padding: 4px 10px; }
+.hero-meal { display: inline-block; margin-top: 8px; font-size: 13px; background: rgba(255, 255, 255, .2); border-radius: 99px; padding: 4px 10px; }

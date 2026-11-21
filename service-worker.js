@@ -1,6 +1,6 @@
 /* Mijn Budget – service worker: maakt de app offline beschikbaar.
    Bij een update van de app: verhoog VERSION hieronder. Je gegevens blijven bewaard. */
-const VERSION = '1.1.0';
+const VERSION = '1.2.1';
 const CACHE = 'mijn-budget-' + VERSION;
 const ASSETS = [
   './', './index.html', './styles.css', './manifest.json',
