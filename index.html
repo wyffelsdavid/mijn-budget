@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#F8F2EE">
+  <meta name="color-scheme" content="light">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Mijn Budget">
+  <meta name="format-detection" content="telephone=no">
+  <meta name="description" content="Persoonlijk budget, privé en offline op je iPhone.">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="icon" type="image/png" href="icons/icon-192.png">
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="styles.css">
+  <title>Mijn Budget</title>
+</head>
+<body>
+  <header class="topbar">
+    <button id="back" class="round" data-act="back" hidden aria-label="Terug">‹</button>
+    <h1 id="title">Overzicht</h1>
+    <button id="gear" class="round" data-act="nav" data-v="settings" aria-label="Instellingen">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+    </button>
+  </header>
+
+  <div id="update" class="update" hidden>Er is een nieuwe versie van de app. <button data-act="sw-update">Vernieuwen</button></div>
+
+  <main id="view"><noscript>Schakel JavaScript in om Mijn Budget te gebruiken.</noscript></main>
+
+  <button class="fab" data-act="add" aria-label="Transactie toevoegen"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
+
+  <nav class="tabbar" aria-label="Hoofdmenu">
+    <button class="tab active" data-act="nav" data-v="dashboard"><svg viewBox="0 0 24 24"><path d="M3.5 10.5 12 4l8.5 6.5V20a1 1 0 0 1-1 1H15v-6H9v6H4.5a1 1 0 0 1-1-1z"/></svg>Overzicht</button>
+    <button class="tab" data-act="nav" data-v="history"><svg viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="18" r="1"/></svg>Historiek</button>
+    <button class="tab" data-act="nav" data-v="budget"><svg viewBox="0 0 24 24"><path d="M4 7.5A2.5 2.5 0 0 1 6.5 5H19v4"/><path d="M4 7.5V18a2 2 0 0 0 2 2h14V9H6.5A2.5 2.5 0 0 1 4 7.5z"/><circle cx="16" cy="14.5" r="1.2"/></svg>Budget</button>
+    <button class="tab" data-act="nav" data-v="savings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r=".8"/></svg>Sparen</button>
+    <button class="tab" data-act="nav" data-v="reports"><svg viewBox="0 0 24 24"><path d="M5 20V11M11 20V5M17 20v-7M3 20.5h18"/></svg>Rapporten</button>
+  </nav>
+
+  <div id="sheet" class="sheet-backdrop" hidden>
+    <div class="sheet" role="dialog" aria-modal="true"><div class="grabber"></div><div id="sheet-body"></div></div>
+  </div>
+
+  <div id="dialog" class="dialog-backdrop" hidden>
+    <div class="dialog" role="alertdialog" aria-labelledby="dlg-title">
+      <h3 id="dlg-title"></h3>
+      <p id="dlg-msg"></p>
+      <input id="dlg-input" autocomplete="off" autocapitalize="characters" hidden>
+      <div class="dialog-btns"><button class="btn ghost" id="dlg-cancel">Annuleren</button><button class="btn primary" id="dlg-ok">OK</button></div>
+    </div>
+  </div>
+
+  <input type="file" id="import-file" accept=".json,application/json" hidden>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script src="js/db.js"></script>
+  <script src="js/logic.js"></script>
+  <script src="js/charts.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
